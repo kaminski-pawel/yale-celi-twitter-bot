@@ -1,4 +1,4 @@
-# import json
+import datetime
 import typing as t
 
 from airtable.from_airtable import AirtableTransformer, join_on_key
@@ -6,12 +6,17 @@ from aws.sqs import get_client, send_message_batch
 from twitter.create_tweet import DateWrapper, Item, TweetText
 
 
-# def _save_to_file(data: t.List[str], filename: str) -> None:
-#     with open(filename, 'w', encoding='utf-8') as f:
-#         json.dump(data, f, ensure_ascii=False)
+def _save_to_file(data: t.List[str], filename: str) -> None:
+    import json
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False)
 
 
-def _order_tweets_list(tweets: t.List[t.Dict[str, t.Any]]):
+def _today() -> str:
+    return datetime.date.today().strftime('%Y-%m-%d')
+
+
+def _order_tweets_list(tweets: t.List[t.Dict[str, t.Any]]) -> t.List[t.Dict[str, t.Any]]:
     return sorted(tweets, key=lambda d: DateWrapper(
         d['orig_date_of_last_action']
         if 'orig_date_of_last_action' in d
@@ -20,7 +25,7 @@ def _order_tweets_list(tweets: t.List[t.Dict[str, t.Any]]):
 
 if __name__ == '__main__':
     yale_airtable = AirtableTransformer()
-    yale_airtable.input_json = 'assets/yale_current.json'
+    yale_airtable.input_json = f'assets/yale_{_today()}.json'
     yale_airtable.prefix = 'orig_'
     yale_airtable.use_created_time = True
     yale_table = yale_airtable.get_table()
@@ -39,4 +44,5 @@ if __name__ == '__main__':
         if item.action and item.name:
             tweets.append(TweetText(item).text())
 
+    _save_to_file(tweets, f'assets/tweets_{_today()}.json')
     send_message_batch(get_client(), tweets)
