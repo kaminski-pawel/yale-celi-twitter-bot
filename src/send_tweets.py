@@ -5,7 +5,7 @@ from aws.sqs import delete_message, get_client, receive_message
 from twitter.post_tweet import post_tweet
 
 
-PAUSE_TIME_IN_SECONDS = 60
+PAUSE_TIME_IN_SECONDS = 60 * 5
 
 
 if __name__ == '__main__':
