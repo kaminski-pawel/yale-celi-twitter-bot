@@ -2,6 +2,7 @@ import datetime
 from dataclasses import dataclass, field
 import random
 import typing as t
+from urllib.parse import urlparse
 
 
 class TwitterHandle(str):
@@ -9,19 +10,25 @@ class TwitterHandle(str):
     Wrapper to help to get the twitter handle or hashtag from an url.
     """
 
-    def get_handle(self):
-        try:
-            return self.split('/')[-1]
-        except KeyError:
-            return ''
+    def __init__(self, *args, **kwargs):
+        self.parsed_url = urlparse(self)
+
+    def is_url(self):
+        return all([self.parsed_url.scheme, self.parsed_url.netloc])
+
+    @property
+    def name(self):
+        if self.is_url():
+            return self.parsed_url.path.split('/')[-1]
+        return self.split('/')[-1].split(' (')[0].replace(' ', '')
 
     @property
     def hashtag(self):
-        return f"#{self.get_handle()}" if self.get_handle() else ''
+        return f'#{self.name}' if self.name else ''
 
     @property
     def handle(self):
-        return f"@{self.get_handle()}" if self.get_handle() else ''
+        return f'@{self.name}' if self.name else ''
 
 
 class DateWrapper(datetime.date):
@@ -59,13 +66,16 @@ class Item:
     twitter: TwitterHandle = field(init=False)
     _updated: str = ''
     updated: datetime.date = field(init=False)
+    _last_action: str = ''
+    last_action: datetime.date = field(init=False)
 
     def __post_init__(self, *args, **kwargs):
         self.status = self._get_status()
-        # self.updated = DateWrapper(self._updated)
         self.updated = DateWrapper(datetime.datetime.now(
             datetime.timezone.utc).isoformat())
-        self.twitter = TwitterHandle(self._twitter)
+        self.twitter = TwitterHandle(
+            self._twitter if self._twitter else self.name)
+        self.last_action = DateWrapper(self._last_action)
 
     def get(self, key) -> t.Any:
         return getattr(self, key)
@@ -93,6 +103,7 @@ class Item:
                 'orig_action': 'action',
                 'e_twitter': '_twitter',
                 'orig_created_time': '_updated',
+                'orig_date_of_last_action': '_last_action',
             }
             return args_keys[key] if key in args_keys else ''
         try:
@@ -161,9 +172,10 @@ class TweetText:
 
     @property
     def who(self) -> str:
-        return f"{self.item.name} ({self.item.industry})" \
-            if self.item.industry \
-            else self.item.name
+        if self.item.industry:
+            return f"{self.item.name} ({self.item.industry})"
+        else:
+            return self.item.name
 
     @property
     def what(self) -> str:
@@ -178,9 +190,14 @@ class TweetText:
 
     @property
     def when(self) -> str:
-        return f' (as of {self.item.updated.describe()})' \
-            if self.item.updated \
-            else ''
+        if self.item.updated and self.item.last_action:
+            last_action = self.item.last_action.describe()
+            updated = self.item.updated.describe()
+            return f' (date of action: {last_action}; up-to-date on: {updated})'
+        elif self.item.updated:
+            return f' (as of {self.item.updated.describe()})'
+        else:
+            return ''
 
     @property
     def details(self) -> str:
