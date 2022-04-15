@@ -4,6 +4,7 @@ import typing as t
 from airtable.from_airtable import AirtableTransformer, join_on_key
 from aws.sqs import get_client, send_message_batch
 from twitter.create_tweet import DateWrapper, Item, TweetText
+from twitter.to_omit import to_omit
 
 
 def _save_to_file(data: t.List[str], filename: str) -> None:
@@ -37,12 +38,16 @@ if __name__ == '__main__':
 
     table = _order_tweets_list(
         join_on_key(yale_table, extended_table, join_on='slug'))
+    _save_to_file(table, f'assets/_table_{_today()}.json')
 
     tweets = []
     for _item in table:
         item = Item(**Item.to_args(_item))
-        if item.action and item.name:
+        if item.action and item.name and (item.name.strip() not in to_omit):
             tweets.append(TweetText(item).text())
 
-    _save_to_file(tweets, f'assets/tweets_{_today()}.json')
-    send_message_batch(get_client(), tweets)
+    _save_to_file(tweets, f'assets/_tweets_{_today()}.json')
+    # for tweet in tweets[:36]:
+    #     print(tweet)
+    #     print('-' * 100)
+    send_message_batch(get_client(), tweets[:36])
