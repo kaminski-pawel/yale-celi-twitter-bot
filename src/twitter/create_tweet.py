@@ -1,6 +1,7 @@
 import datetime
 from dataclasses import dataclass, field
 import random
+import string
 import typing as t
 from urllib.parse import urlparse
 
@@ -20,7 +21,15 @@ class TwitterHandle(str):
     def name(self):
         if self.is_url():
             return self.parsed_url.path.split('/')[-1]
-        return self.split('/')[-1].split(' (')[0].replace(' ', '')
+        return self._get_cleaned_name()
+
+    def _get_cleaned_name(self) -> str:
+        """
+        Removes everything before `/` char, everything after ` (` char,
+        also spaces ` ` and `string.punctuation`. Returns cleaned `self` copy.
+        """
+        s = self.split('/')[-1].split(' (')[0].replace(' ', '')
+        return s.translate(str.maketrans('', '', string.punctuation))
 
     @property
     def hashtag(self):
