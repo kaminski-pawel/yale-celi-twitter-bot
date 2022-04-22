@@ -6,6 +6,9 @@ import typing as t
 from urllib.parse import urlparse
 
 
+SIZE_LIMIT = 280
+
+
 class TwitterHandle(str):
     """
     Wrapper to help to get the twitter handle or hashtag from an url.
@@ -137,7 +140,7 @@ class TweetText:
 
     def __init__(self, item: Item) -> None:
         self.item = item
-        self._size_limit = 280
+        self._size_limit = SIZE_LIMIT  # 280
         self._hashtags = [
             '#Boycott',
             '#PutinWarCrimes',
@@ -204,7 +207,8 @@ class TweetText:
             updated = self.item.updated.describe()
             return f' (date of action: {last_action}; up-to-date on: {updated})'
         elif self.item.updated:
-            return f' (as of {self.item.updated.describe()})'
+            updated = self.item.updated.describe()
+            return f' (up-to-date on: {updated})'
         else:
             return ''
 
