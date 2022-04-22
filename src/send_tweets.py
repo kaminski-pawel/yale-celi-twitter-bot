@@ -4,7 +4,7 @@ import time
 
 from aws.sqs import delete_message, get_client, receive_message
 from twitter.create_tweet import SIZE_LIMIT
-from twitter.post_tweet import post_tweet
+from twitter.api import post_tweet
 
 
 PAUSE_TIME_IN_SECONDS = 60 * random.uniform(3, 7)  # * 5
